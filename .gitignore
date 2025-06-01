@@ -23,7 +23,6 @@ Front/node_modules
 
 FastApi/__pycache__/
 FastApi/Classifier/__pycache__/
-FastApi/checkpoints/
 FastApi/data/
 
 dist
