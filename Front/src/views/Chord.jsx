@@ -18,7 +18,8 @@ export default function Chord() {
     const [isPaused, setIsPaused] = useState(false);
 
     const [file, setFile] = useState(null);
-    const [notes, setNotes] = useState([]);
+    const [startTime, setStartTime] = useState(0);
+    const [duration, setDuration] = useState(0);
 
     useEffect(() => {
         const editor = Editor.getInstance('Editor');
@@ -80,11 +81,40 @@ export default function Chord() {
 
     const handlePredict = async () => {
         if (file) {
-            const predictedNotes = await PredictChord(file);
+            const editor = Editor.getInstance('Editor');
+            const predictedNotes = await PredictChord(file,startTime);
             console.log(JSON.stringify(predictedNotes));
-            setNotes(predictedNotes);
+            editor.loadChord(predictedNotes);
         }
     };
+
+    function handleFileChange(e) {
+        const selectedFile = e.target.files[0];
+        if (!selectedFile) return;
+
+        const audio = new Audio();
+        audio.src = URL.createObjectURL(selectedFile);
+
+        audio.addEventListener('loadedmetadata', () => {
+            const durMs = Math.floor(audio.duration * 1000);
+
+            const MIN_DURATION_MS = 992;
+
+            if (durMs < MIN_DURATION_MS) {
+                alert(`El archivo debe durar al menos ${MIN_DURATION_MS} ms.`);
+                setFile(null);
+                setDuration(0);
+                setStartTime(0);
+                return;
+            }
+
+            const maxRange = durMs - MIN_DURATION_MS;
+
+            setFile(selectedFile);
+            setDuration(maxRange);
+            setStartTime(0); 
+        });
+    }
 
     return (
         <>
@@ -128,17 +158,28 @@ export default function Chord() {
                                 />
                             </div>
 
+                            {file && (
+                                <div className="flex text-black items-center gap-2">
+                                    <label>{`0 ms`}</label>
+                                    <input
+                                        type="range"
+                                        min={0}
+                                        max={duration}
+                                        value={startTime}
+                                        onChange={(e) => setStartTime(Number(e.target.value))}
+                                    />
+                                    <label>{`${duration} ms`}</label>
+                                    <span className="ml-2 text-sm ">{`Actual: ${startTime} ms`}</span>
+                                </div>
+                            )}
+
                             <input
-                                className='bg-black'
+                                className='bg-black ml-10'
                                 type='file'
-                                accept=".mp3,.wav,.ogg,.flac,.midi,.mid"
-                                onChange={(e) => {
-                                    const selectedFile = e.target.files[0];
-                                    if (selectedFile) {
-                                        setFile(selectedFile);
-                                    }
-                                }}
+                                accept=".mp3,.wav,.ogg,.flac"
+                                onChange={handleFileChange}
                             />
+
                         </div>
                     </div>
 

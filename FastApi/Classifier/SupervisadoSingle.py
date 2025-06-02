@@ -20,21 +20,31 @@ def midi_to_note_name(midi_note):
     note = note_names[midi_note % 12]
     return f"{note}{octave}"
     
-def load_audio_to_mel_spectrogram(audio_path, sample_rate=16000, n_mels=128, n_fft=2048, hop_length=512, top_db=80.0, to_db=True):
+def load_audio_to_mel_spectrogram(audio_path, sample_rate=16000, n_mels=128, n_fft=2048,
+                                   hop_length=512, top_db=80.0, to_db=True, start_time_ms=0):
     """
-    Carga un archivo de audio (wav, mp3, flac...), convierte a espectrograma Mel y aplica transformación a dB.
+    Carga un archivo de audio y convierte a espectrograma Mel. Puede empezar desde `start_time_ms` milisegundos.
     """
-    waveform, sr = torchaudio.load(audio_path)  # torchaudio usa backend con ffmpeg o sox que soporta muchos formatos
+    waveform, sr = torchaudio.load(audio_path)
+
     if sr != sample_rate:
-        resampler = torchaudio.transforms.Resample(sr, sample_rate)
+        resampler = torchaudio.transforms.Resample(orig_freq=sr, new_freq=sample_rate)
         waveform = resampler(waveform)
+        sr = sample_rate
 
     # Convertir a mono si es estéreo
     if waveform.shape[0] > 1:
         waveform = waveform.mean(dim=0, keepdim=True)
 
+    # Cortar desde `start_time_ms`
+    start_sample = int((start_time_ms / 1000) * sr)  # convertir ms a segundos para sample index
+    if start_sample < waveform.shape[1]:
+        waveform = waveform[:, start_sample:]
+    else:
+        raise ValueError(f"start_time_ms={start_time_ms} está fuera del rango del audio.")
+
     mel_spectrogram = torchaudio.transforms.MelSpectrogram(
-        sample_rate=sample_rate,
+        sample_rate=sr,
         n_fft=n_fft,
         hop_length=hop_length,
         n_mels=n_mels,
@@ -43,9 +53,9 @@ def load_audio_to_mel_spectrogram(audio_path, sample_rate=16000, n_mels=128, n_f
     if to_db:
         mel_spectrogram = torchaudio.transforms.AmplitudeToDB(top_db=top_db)(mel_spectrogram)
 
-    return mel_spectrogram  # shape: [1, n_mels, time_frames]
+    return mel_spectrogram
 
-def classify_audio_file(audio_path, sa_model, sc_model, dm, sa_hparams):
+def classify_audio_file(audio_path, sa_model, sc_model, dm, sa_hparams,start_time):
     """
     Dado un path a un archivo de audio, procesa y clasifica las notas usando los modelos cargados.
     """
@@ -54,7 +64,8 @@ def classify_audio_file(audio_path, sa_model, sc_model, dm, sa_hparams):
     mel_spec = load_audio_to_mel_spectrogram(audio_path,
                                              sample_rate=16000,
                                              n_mels=sa_hparams['resolution'][0],
-                                             top_db=sa_hparams['top_db'])
+                                             top_db=sa_hparams['top_db'],
+                                             start_time_ms=start_time)
 
     # Aplicar transformaciones (recorte, etc)
     spec_crop_fn = partial(spec_crop, height=sa_hparams['resolution'][0], width=sa_hparams['resolution'][1])
@@ -93,7 +104,7 @@ def classify_audio_file(audio_path, sa_model, sc_model, dm, sa_hparams):
     return note_names
 
 
-def Classify(audio_path):
+def Classify(audio_path,start_time):
     sa_hparams = {
         'in_channels': 1,
         'resolution': (128, 32),
@@ -159,5 +170,5 @@ def Classify(audio_path):
     sc_model.eval()
     sc_model.freeze()
     
-    return classify_audio_file(audio_path, sa_model, sc_model, dm, sa_hparams)
+    return classify_audio_file(audio_path, sa_model, sc_model, dm, sa_hparams,start_time)
 

@@ -24,7 +24,7 @@ export const durationMap = {
 
 const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
-function noteToMidi(note) {
+export function noteToMidi(note) {
     const regex = /^([A-G]#?)(\d)$/;
     const match = note.match(regex);
     if (!match) return null;
@@ -35,11 +35,19 @@ function noteToMidi(note) {
     return noteIndex + (octave + 1) * 12;
 }
 
-function midiToNoteName(midi) {
+export function midiToNoteName(midi) {
     if (midi < 0 || midi > 127) return null;
     const noteIndex = midi % 12;
     const octave = Math.floor(midi / 12) - 1;
     return NOTES[noteIndex] + octave;
+}
+
+export function midiNameToVexNote(midiName){
+    const noteMapInverse = Object.fromEntries(
+        Object.entries(noteMap).map(([k, v]) => [v, k])
+    );
+   
+    return noteMapInverse[midiName.replace(/[#b]/g, '')];
 }
 
 function transposeNoteForClef(noteStr, clef = "treble") {

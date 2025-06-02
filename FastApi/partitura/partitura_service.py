@@ -6,7 +6,7 @@ import uuid
 import shutil
 
 # Puedes ajustar los formatos de audio permitidos aquí
-ALLOWED_AUDIO_EXTENSIONS = {'.mp3', '.wav', '.ogg', '.flac', '.midi', '.mid'}
+ALLOWED_AUDIO_EXTENSIONS = {'.mp3', '.wav', '.ogg', '.flac'}
 
 collection_partitura = DB["Chord"]
 
@@ -15,7 +15,7 @@ def ValidateFile(file: UploadFile) -> bool:
     extension = os.path.splitext(filename)[1]
     return extension in ALLOWED_AUDIO_EXTENSIONS
 
-def Predict(file: UploadFile):
+def Predict(file: UploadFile, start_time: int):
     if not ValidateFile(file):
         raise HTTPException(
             status_code=400,
@@ -32,7 +32,7 @@ def Predict(file: UploadFile):
         shutil.copyfileobj(file.file, buffer)
 
     try:
-        notes = Classify(temp_file_path)
+        notes = Classify(temp_file_path,start_time)
         print(notes)
     finally:
         os.remove(temp_file_path)

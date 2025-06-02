@@ -6,9 +6,8 @@ import VexFlow, {
 import EditorListener from './EditorListener';
 import VexVoice from './VexVoice';
 import instruments from './Instruments';
-import { durationMap } from './VexPlayer';
+import { durationMap, midiNameToVexNote } from './VexPlayer';
 import VexPlayer from './VexPlayer';
-import { faL } from '@fortawesome/free-solid-svg-icons';
 
 export default class Editor extends EditorListener {
   static instance = null;
@@ -118,7 +117,7 @@ export default class Editor extends EditorListener {
   setChord() {
     let compas = this.voices[0].compases[0];
     compas.notas = [];
-    compas.addNota(['b/4'],'1');
+    compas.addNota(['b/4'],'1r');
   }
 
   addVoice(name, instrument) {
@@ -723,6 +722,18 @@ export default class Editor extends EditorListener {
     this.voices[index + 1] = temp_voice;
 
     this.formated = false;
+    this.Editdraw();
+  }
+
+  loadChord(keys){
+    let nota = this.voices[0].compases[0].notas[0];
+    for(let key of keys){
+      console.log(key);
+      let vexKey = midiNameToVexNote(key);
+      console.log(vexKey);
+      nota.addKey(vexKey);
+    }
+
     this.Editdraw();
   }
 

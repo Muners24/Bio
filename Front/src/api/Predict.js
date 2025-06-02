@@ -1,6 +1,7 @@
-export const PredictChord = async (file) => {
+export const PredictChord = async (file, start_time) => {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('start_time', start_time);  // <-- aquí
 
     const response = await fetch('http://localhost:8000/chord/predict/', {
         method: 'POST',
@@ -11,6 +12,6 @@ export const PredictChord = async (file) => {
         throw new Error('Error al predecir el acorde');
     }
 
-    let res = await await response.json();
+    let res = await response.json();
     return res.notes;
 };
