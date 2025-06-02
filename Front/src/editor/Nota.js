@@ -241,7 +241,7 @@ export default class Nota extends VexRec {
     }
 
     async playNote() {
-        if (this.isPlaying || this.isRest() || !this.selected) return;
+        if (this.isPlaying || this.isRest()) return;
         this.isPlaying = true;
         await this.player.playNote(this);
         this.isPlaying = false;

@@ -727,14 +727,23 @@ export default class Editor extends EditorListener {
 
   loadChord(keys){
     let nota = this.voices[0].compases[0].notas[0];
+    nota.keys = [];
+    let notes_c = 0;
     for(let key of keys){
-      console.log(key);
       let vexKey = midiNameToVexNote(key);
       console.log(vexKey);
       nota.addKey(vexKey);
+      notes_c++;
     }
 
+    if(notes_c < 1){
+      nota.keys = ['b/4'];
+      nota.setDuration('1r');
+    }
+    
+    this.formated = false;
     this.Editdraw();
+    nota.playNote();
   }
 
   static on(eventName, callback) {
